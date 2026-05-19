@@ -1,0 +1,90 @@
+# ==================== 服务器配置 ====================
+server:
+  # 网关服务监听端口，所有外部请求通过此端口进入网关
+  port: 8080
+
+spring:
+  application:
+    # 服务名称，用于在 Nacos 注册中心中标识本服务，其他微服务可通过此名称发现网关
+    name: hpb-gateway
+
+  # ==================== Nacos 配置中心导入 ====================
+  config:
+    import:
+      # 导入 Nacos 配置，支持从 Nacos 配置中心加载配置
+      # 格式：nacos:配置文件名?group=分组名&refreshEnabled=是否开启自动刷新
+      - nacos:hpb-gateway.yml?group=DEFAULT_GROUP&refreshEnabled=true
+
+  cloud:
+    # ==================== Nacos 配置 ====================
+    nacos:
+      discovery:
+        # Nacos 注册中心集群地址，多个地址用逗号分隔
+        # 网关启动后会自动注册到该集群，并从中发现其他微服务
+        server-addr: 192.168.31.65:8848,192.168.31.65:8850,192.168.31.65:8852
+        # Nacos 命名空间ID，用于环境隔离（dev/test/prod）
+        namespace: 60f5d063-967d-452e-adba-a51ea809ac46
+        # group: DEFAULT_GROUP      # Nacos 分组，用于同命名空间下的服务分组管理
+
+      config:
+        # Nacos 配置中心集群地址，多个地址用逗号分隔
+        # 支持从 Nacos 集群动态拉取配置，实现配置热更新和高可用
+        server-addr: 192.168.31.65:8848,192.168.31.65:8850,192.168.31.65:8852
+        # Nacos 命名空间ID，用于环境隔离
+        namespace: 60f5d063-967d-452e-adba-a51ea809ac46
+        # 配置文件后缀格式，表示从 Nacos 拉取的配置文件为 yml 格式
+        file-extension: yml
+
+# ==================== Actuator 监控端点配置 ====================
+management:
+  endpoints:
+    web:
+      exposure:
+        # 对外暴露的端点列表：
+        #   health - 健康检查，用于 K8s/运维监控探活
+        #   info   - 应用信息，展示构建版本等元数据
+        #   gateway - 网关专属端点，可通过 /actuator/gateway/routes 查看所有路由规则
+        #   prometheus - Prometheus 指标端点，输出 Micrometer 收集的指标数据
+        include: health,info,gateway,prometheus
+  endpoint:
+    gateway:
+      # 启用 Gateway 端点，允许通过 /actuator/gateway/** 查看和管理路由
+      enabled: true
+    prometheus:
+      # 启用 Prometheus 端点，路径为 /actuator/prometheus
+      enabled: true
+  metrics:
+    tags:
+      # 为所有指标添加应用名称标签，便于在多应用环境中区分数据来源
+      application: ${spring.application.name:hpb-gateway}
+
+# ==================== IP 黑白名单配置 ====================
+gateway:
+  ip-filter:
+    # 是否启用 IP 白名单（默认 false）
+    # 启用后，只有白名单中的 IP 才能访问网关
+    whitelist-enabled: false
+    # 是否启用 IP 黑名单（默认 false）
+    # 启用后，黑名单中的 IP 将被禁止访问网关
+    blacklist-enabled: false
+    # IP 白名单列表
+    # 支持格式：
+    #   - 单个 IP：192.168.1.1
+    #   - CIDR 网段：192.168.1.0/24
+    whitelist:
+      - 127.0.0.1
+      - 192.168.1.0/24
+      - 10.0.0.0/8
+    # IP 黑名单列表
+    # 支持格式同上
+    blacklist:
+      - 192.168.1.100
+      - 10.0.0.50
+    # 被拦截时的响应消息
+    reject-message: "访问被拒绝：IP 地址不在允许范围内"
+
+## ==================== 日志配置 ====================
+#logging:
+#  level:
+#    # 开启 Gateway 的 DEBUG 日志，可查看路由匹配、过滤器执行等详细信息，生产环境建议改为 INFO
+#    org.springframework.cloud.gateway: DEBUG

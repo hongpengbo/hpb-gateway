@@ -1,0 +1,73 @@
+plugins {
+    // Java 编译插件，提供 Java 项目的编译、测试、打包等基础能力
+    id 'java'
+    // Spring Boot Gradle 插件，提供 bootRun、bootJar 等任务，支持打包为可执行的 fat jar
+    id 'org.springframework.boot' version '2.7.18'
+    // Spring 依赖管理插件，自动对齐 Spring Boot BOM 中定义的依赖版本，无需手动指定版本号
+    id 'io.spring.dependency-management' version '1.1.5'
+}
+
+// 项目组织标识，与包名对应
+group = 'com.hpb.gateway'
+// 项目版本号
+version = '1.0-SNAPSHOT'
+
+java {
+    // Java 源代码兼容级别，使用 JDK 8 语法
+    sourceCompatibility = '1.8'
+}
+
+repositories {
+    // 使用 Maven 中央仓库下载依赖
+    mavenCentral()
+}
+
+ext {
+    // Spring Cloud 版本，与 Spring Boot 2.7.x 兼容，提供 Gateway、LoadBalancer 等微服务组件
+    set('springCloudVersion', '2021.0.9')
+    // Spring Cloud Alibaba 版本，与 Spring Cloud 2021.0.x 兼容，提供 Nacos、Sentinel 等阿里微服务组件
+    set('springCloudAlibabaVersion', '2021.0.6.0')
+}
+
+dependencies {
+    // Lombok 代码生成工具，自动生成 Getter/Setter/ToString/EqualsAndHashCode 等方法
+    compileOnly 'org.projectlombok:lombok'
+    annotationProcessor 'org.projectlombok:lombok'
+
+    // Spring Cloud Gateway 网关核心依赖，基于 WebFlux 响应式编程，提供路由转发、过滤器、断言等网关核心功能
+    implementation 'org.springframework.cloud:spring-cloud-starter-gateway'
+    // Actuator 监控端点，提供健康检查、应用信息、路由查看等运维接口
+    implementation 'org.springframework.boot:spring-boot-starter-actuator'
+
+    // Nacos 服务发现，支持服务自动注册与发现，网关可通过服务名来转发请求
+    implementation 'com.alibaba.cloud:spring-cloud-starter-alibaba-nacos-discovery'
+    // Nacos 配置中心，支持从 Nacos 动态拉取配置并实现配置热更新（可选）
+    implementation 'com.alibaba.cloud:spring-cloud-starter-alibaba-nacos-config'
+
+    // Spring Cloud LoadBalancer 客户端负载均衡器，与 lb:// 路由配合使用，实现服务实例的负载均衡调用
+    implementation 'org.springframework.cloud:spring-cloud-starter-loadbalancer'
+
+    // Micrometer Prometheus 注册表，用于将应用指标导出为 Prometheus 格式
+    implementation 'io.micrometer:micrometer-registry-prometheus'
+
+    // Spring Boot 测试套件，包含 JUnit 5、Mockito、WebTestClient 等测试工具
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    // Lombok 测试依赖
+    testCompileOnly 'org.projectlombok:lombok'
+    testAnnotationProcessor 'org.projectlombok:lombok'
+}
+
+// 统一依赖版本管理，通过导入 BOM 确保 Spring Cloud 和 Spring Cloud Alibaba 各组件版本互相兼容
+dependencyManagement {
+    imports {
+        // Spring Cloud 组件 BOM，统一管理 Gateway、LoadBalancer 等组件版本
+        mavenBom "org.springframework.cloud:spring-cloud-dependencies:${springCloudVersion}"
+        // Spring Cloud Alibaba 组件 BOM，统一管理 Nacos、Sentinel 等组件版本
+        mavenBom "com.alibaba.cloud:spring-cloud-alibaba-dependencies:${springCloudAlibabaVersion}"
+    }
+}
+
+test {
+    // 使用 JUnit 5 平台运行测试
+    useJUnitPlatform()
+}
